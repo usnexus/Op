@@ -1,0 +1,55 @@
+<?php
+
+$host = "localhost";
+$user = "root";
+$password = "";
+$db = "ddosguru";
+$conn = mysqli_connect($host, $user, $password, $db);
+if (!$conn) die("Database error!");
+function available_plans()
+{
+    global $conn;
+    $query = "SELECT * FROM `plans`";
+    $res = mysqli_fetch_all(mysqli_query($conn, $query));
+    if (count($res) > 0)
+        $i = 1;
+    foreach ($res as $row) {
+        [$id, $planName, $planConcs, $planTime, $planPrice, $planThreads] = $row;
+        $planName = strtoupper($planName);
+        echo "$i ) $planName => $planConcs Concs | " . $planTime . " Boot Time | $planThreads Threads | $$planPrice/month\n    ";
+        $i++;
+    }
+    echo "\n";
+}
+
+
+function available_users_count()
+{
+    global $conn;
+    return count(mysqli_fetch_all(mysqli_query($conn, "SELECT * FROM `users`")));
+}
+
+
+
+function updateId($tableName)
+{
+    global $conn;
+    $query = "SET @num := 0";
+    mysqli_query($conn, $query);
+    $query = "UPDATE `$tableName` SET id = @num := (@num + 1)";
+    mysqli_query($conn, $query);
+}
+
+
+function insertSql($tableName, ...$args)
+{
+    global $conn;
+    $cNameStr = $cValStr = "";
+    foreach ($args as $column) {
+        [$cName, $cVal] = explode("=>", $column);
+        $cNameStr += "`$cName`, ";
+        $cValStr += "'$cVal', ";
+    }
+    $query = "INSERT INTO `$tableName` ($cNameStr) VALUES ($cValStr)";
+    mysqli_query($conn, $query);
+}

